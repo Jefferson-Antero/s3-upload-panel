@@ -26,7 +26,7 @@ app.use(helmet({
       'script-src':      ["'self'", "'unsafe-inline'"],
       'script-src-attr': ["'unsafe-inline'"],
       'img-src':         ["'self'", 'data:', 'https://dstec.com.br'],
-      'connect-src':     ["'self'"],
+      'connect-src':     ["'self'", 'https://*.s3.amazonaws.com', 'https://*.s3.*.amazonaws.com'],
     },
   },
 }));
