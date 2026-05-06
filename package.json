@@ -1,0 +1,16 @@
+{
+  "name": "s3-upload-panel",
+  "version": "1.0.0",
+  "description": "Painel de upload direto para S3 via Multipart Upload",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
