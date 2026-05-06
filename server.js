@@ -6,6 +6,7 @@ const {
   UploadPartCommand,
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
+  GetObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
@@ -145,6 +146,19 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requireAnyAuth(req, res, next) {
+  const authToken  = req.headers['x-auth-token'];
+  const adminToken = req.headers['x-admin-token'];
+  if (authToken) {
+    const sess = sessions.get(authToken);
+    if (sess && Date.now() <= sess.expiry) { req.session = sess; return next(); }
+  }
+  if (adminToken && adminSessions.has(adminToken) && Date.now() <= adminSessions.get(adminToken)) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Sessão inválida ou expirada' });
+}
+
 // ── Admin Routes ──────────────────────────────────────────────────────────────
 
 app.get('/admin/uploads', requireAdmin, (_req, res) => {
@@ -166,6 +180,21 @@ app.get('/admin/stream', requireAdmin, (req, res) => {
 
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
+});
+
+// ── Download (presigned GET URL) ──────────────────────────────────────────────
+
+app.get('/upload/download', requireAnyAuth, async (req, res) => {
+  const { key } = req.query;
+  if (!key) return res.status(400).json({ error: 'key obrigatório' });
+  try {
+    const cmd = new GetObjectCommand({ Bucket: BUCKET, Key: key });
+    const url = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
+    res.json({ url });
+  } catch (err) {
+    console.error('[download]', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Upload Progress (client reports bytes to server) ──────────────────────────

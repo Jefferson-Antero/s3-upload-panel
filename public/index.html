@@ -222,6 +222,20 @@
     }
     .btn-cancel-file:hover { background: rgba(239,68,68,.1); color: var(--error); border-color: rgba(239,68,68,.3); }
 
+    .btn-download {
+      background: transparent;
+      border: 1px solid rgba(34,197,94,.35);
+      color: var(--success);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-download:hover { background: rgba(34,197,94,.12); }
+
     /* ── PROGRESS BAR ──────────────────────────────────── */
     .bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 3px; transition: width .3s; background: var(--accent); }
@@ -749,6 +763,7 @@ function renderAdminTable() {
           <th>Status</th>
           <th>Início</th>
           <th>Duração</th>
+          <th>Download</th>
         </tr>
       </thead>
       <tbody>
@@ -798,6 +813,9 @@ function adminRow(info) {
     <td><span class="badge ${badgeCls}">${badgeLabel}</span></td>
     <td class="time-cell">${fmtTime(info.startedAt)}</td>
     <td class="time-cell">${duration}</td>
+    <td>${info.status === 'completed' && info.key
+      ? `<button class="btn-download" onclick="adminDownloadFile(${JSON.stringify(info.key)}, ${JSON.stringify(info.fileName)})">↓ Baixar</button>`
+      : '—'}</td>
   </tr>`;
 }
 
@@ -864,7 +882,9 @@ function render() {
       ? `<button class="btn-remove" title="Remover" onclick="removeFile('${f.id}')">✕</button>`
       : f.status === 'uploading'
         ? `<button class="btn-cancel-file" onclick="cancelFile('${f.id}')">✕ Cancelar</button>`
-        : '';
+        : f.status === 'done' && f.key
+          ? `<button class="btn-download" onclick="downloadFile(${JSON.stringify(f.key)}, ${JSON.stringify(f.file.name)})">↓ Baixar</button>`
+          : '';
 
     return `
     <div class="file-card" id="fc-${f.id}">
@@ -1087,6 +1107,38 @@ async function api(endpoint, body, auth = true) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
+}
+
+async function downloadFile(key, filename) {
+  try {
+    const res  = await fetch(`/upload/download?key=${encodeURIComponent(key)}`, {
+      headers: { 'x-auth-token': token },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const a = document.createElement('a');
+    a.href     = data.url;
+    a.download = filename || '';
+    a.click();
+  } catch (e) {
+    alert('Erro ao gerar link de download: ' + e.message);
+  }
+}
+
+async function adminDownloadFile(key, filename) {
+  try {
+    const res  = await fetch(`/upload/download?key=${encodeURIComponent(key)}`, {
+      headers: { 'x-admin-token': adminToken },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const a = document.createElement('a');
+    a.href     = data.url;
+    a.download = filename || '';
+    a.click();
+  } catch (e) {
+    alert('Erro ao gerar link de download: ' + e.message);
+  }
 }
 
 async function apiAdmin(endpoint, body = {}) {
