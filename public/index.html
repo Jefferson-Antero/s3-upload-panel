@@ -513,6 +513,20 @@
       </div>
       <div id="admin-table-body"></div>
     </div>
+
+    <div class="admin-table-wrap" style="margin-top:24px">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Arquivos no S3</span>
+        <button class="btn btn-ghost" id="btn-s3-browse" onclick="browseS3()" style="font-size:13px;padding:6px 14px">
+          ↻ Buscar arquivos
+        </button>
+      </div>
+      <div id="s3-browse-body">
+        <div class="empty-state" style="padding:32px 0">
+          <p style="color:var(--muted);font-size:14px">Clique em "Buscar arquivos" para listar os objetos existentes no bucket.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1123,6 +1137,52 @@ async function downloadFile(key, filename) {
   } catch (e) {
     alert('Erro ao gerar link de download: ' + e.message);
   }
+}
+
+async function browseS3() {
+  const btn  = document.getElementById('btn-s3-browse');
+  const body = document.getElementById('s3-browse-body');
+  btn.disabled = true;
+  btn.textContent = '↻ Buscando...';
+  try {
+    const res  = await fetch('/admin/s3/browse', { headers: { 'x-admin-token': adminToken } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    renderS3Files(data.files, data.prefix);
+  } catch (e) {
+    body.innerHTML = `<div style="padding:24px;color:var(--error);font-size:14px">Erro: ${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ Buscar arquivos';
+  }
+}
+
+function renderS3Files(files, prefix) {
+  const body = document.getElementById('s3-browse-body');
+  if (!files.length) {
+    body.innerHTML = `<div class="empty-state" style="padding:32px 0"><p style="color:var(--muted);font-size:14px">Nenhum arquivo encontrado em <code>${esc(prefix)}</code>.</p></div>`;
+    return;
+  }
+  const rows = files.map(f => `
+    <tr>
+      <td class="file-cell">
+        <div class="file-cell-name" title="${esc(f.key)}">${esc(f.fileName)}</div>
+        <div class="file-cell-size" style="font-size:11px;color:var(--muted);margin-top:2px">${esc(f.key)}</div>
+      </td>
+      <td class="time-cell">${fmt(f.size)}</td>
+      <td class="time-cell">${fmtTime(new Date(f.lastModified).getTime())}</td>
+      <td><button class="btn-download" onclick="adminDownloadFile(${esc(JSON.stringify(f.key))}, ${esc(JSON.stringify(f.fileName))})">↓ Baixar</button></td>
+    </tr>`).join('');
+  body.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Arquivo</th>
+        <th>Tamanho</th>
+        <th>Data</th>
+        <th>Download</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 async function adminDownloadFile(key, filename) {

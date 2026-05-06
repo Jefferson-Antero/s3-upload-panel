@@ -9,6 +9,7 @@ const {
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
@@ -191,6 +192,25 @@ function requireAnyAuth(req, res, next) {
 }
 
 // ── Admin Routes ──────────────────────────────────────────────────────────────
+
+app.get('/admin/s3/browse', requireAdmin, async (_req, res) => {
+  try {
+    const result = await s3.send(new ListObjectsV2Command({
+      Bucket: BUCKET,
+      Prefix: PREFIX,
+    }));
+    const files = (result.Contents || []).map(o => ({
+      key:          o.Key,
+      fileName:     path.basename(o.Key).replace(/^\d+-/, ''),
+      size:         o.Size,
+      lastModified: o.LastModified,
+    }));
+    res.json({ files, prefix: PREFIX });
+  } catch (err) {
+    console.error('[s3/browse]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get('/admin/uploads', requireAdmin, (_req, res) => {
   res.json({
