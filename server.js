@@ -24,6 +24,18 @@ const s3 = new S3Client({
   requestChecksumRequired: false,
 });
 
+// SDK 3.600+: remove CRC32 headers injected during build phase so they don't
+// end up signed into presigned URLs (browsers can't send the matching header).
+s3.middlewareStack.add(
+  (next) => async (args) => {
+    delete args.request.headers['x-amz-checksum-crc32'];
+    delete args.request.headers['x-amz-checksum-crc64nvme'];
+    delete args.request.headers['x-amz-sdk-checksum-algorithm'];
+    return next(args);
+  },
+  { step: 'build', name: 'stripChecksumForPresign', priority: 'low' }
+);
+
 const BUCKET         = process.env.S3_BUCKET;
 const PREFIX         = process.env.S3_PREFIX || 'uploads/';
 const PASSWORD       = process.env.UPLOAD_PASSWORD;
