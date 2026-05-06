@@ -19,6 +19,8 @@ const app = express();
 const cspDefaults = helmet.contentSecurityPolicy.getDefaultDirectives();
 delete cspDefaults['upgrade-insecure-requests'];
 
+const s3Host = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com`;
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -26,7 +28,7 @@ app.use(helmet({
       'script-src':      ["'self'", "'unsafe-inline'"],
       'script-src-attr': ["'unsafe-inline'"],
       'img-src':         ["'self'", 'data:', 'https://dstec.com.br'],
-      'connect-src':     ["'self'", 'https://*.s3.amazonaws.com', 'https://*.s3.*.amazonaws.com'],
+      'connect-src':     ["'self'", s3Host],
     },
   },
 }));
