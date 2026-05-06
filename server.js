@@ -1,5 +1,7 @@
 require('dotenv').config();
-const express = require('express');
+const express   = require('express');
+const helmet    = require('helmet');
+const rateLimit = require('express-rate-limit');
 const {
   S3Client,
   CreateMultipartUploadCommand,
@@ -10,11 +12,28 @@ const {
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
-const path = require('path');
+const path   = require('path');
 
 const app = express();
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'script-src': ["'self'", "'unsafe-inline'"],
+      'connect-src': ["'self'"],
+    },
+  },
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas. Aguarde 15 minutos.' },
+});
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -74,6 +93,13 @@ setInterval(() => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function safeCompare(a, b) {
+  const sa = String(a);
+  const sb = String(b);
+  if (sa.length !== sb.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(sa), Buffer.from(sb));
+}
+
 function pushRecent(info) {
   recentUploads.push(info);
   if (recentUploads.length > 200) recentUploads.shift();
@@ -88,10 +114,10 @@ function broadcast(event, data) {
 
 // ── Collaborator Auth ─────────────────────────────────────────────────────────
 
-app.post('/auth', (req, res) => {
+app.post('/auth', authLimiter, (req, res) => {
   if (!PASSWORD) return res.status(500).json({ error: 'UPLOAD_PASSWORD não configurado' });
   const { password, name } = req.body;
-  if (!password || password !== PASSWORD)
+  if (!password || !safeCompare(password, PASSWORD))
     return res.status(401).json({ error: 'Senha incorreta' });
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, {
@@ -121,10 +147,10 @@ function requireAuth(req, res, next) {
 
 // ── Admin Auth ────────────────────────────────────────────────────────────────
 
-app.post('/admin/auth', (req, res) => {
+app.post('/admin/auth', authLimiter, (req, res) => {
   if (!ADMIN_PASSWORD) return res.status(500).json({ error: 'ADMIN_PASSWORD não configurado' });
   const { password } = req.body;
-  if (!password || password !== ADMIN_PASSWORD)
+  if (!password || !safeCompare(password, ADMIN_PASSWORD))
     return res.status(401).json({ error: 'Senha incorreta' });
   const token = crypto.randomBytes(32).toString('hex');
   adminSessions.set(token, Date.now() + SESSION_TTL);
@@ -187,6 +213,7 @@ app.get('/admin/stream', requireAdmin, (req, res) => {
 app.get('/upload/download', requireAnyAuth, async (req, res) => {
   const { key } = req.query;
   if (!key) return res.status(400).json({ error: 'key obrigatório' });
+  if (!key.startsWith(PREFIX)) return res.status(403).json({ error: 'Acesso negado' });
   try {
     const cmd = new GetObjectCommand({ Bucket: BUCKET, Key: key });
     const url = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
@@ -202,7 +229,7 @@ app.get('/upload/download', requireAnyAuth, async (req, res) => {
 app.post('/upload/progress', requireAuth, (req, res) => {
   const { uploadId, bytesUploaded } = req.body;
   const info = uploadId && uploadStore.get(uploadId);
-  if (info && typeof bytesUploaded === 'number') {
+  if (info && typeof bytesUploaded === 'number' && bytesUploaded >= 0 && bytesUploaded <= info.fileSize) {
     info.bytesUploaded = bytesUploaded;
     info.lastActivity  = Date.now();
     broadcast('progress', { uploadId, bytesUploaded });
@@ -254,9 +281,14 @@ app.post('/upload/presign', requireAuth, async (req, res) => {
   const { key, uploadId, partNumber } = req.body;
   if (!key || !uploadId || !partNumber)
     return res.status(400).json({ error: 'key, uploadId e partNumber obrigatórios' });
+  const partNum = Number(partNumber);
+  if (!Number.isInteger(partNum) || partNum < 1 || partNum > 10000)
+    return res.status(400).json({ error: 'partNumber inválido (1–10000)' });
+  if (!uploadStore.has(uploadId))
+    return res.status(404).json({ error: 'Upload não encontrado' });
   try {
     const cmd = new UploadPartCommand({
-      Bucket: BUCKET, Key: key, UploadId: uploadId, PartNumber: Number(partNumber),
+      Bucket: BUCKET, Key: key, UploadId: uploadId, PartNumber: partNum,
     });
     const url = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
     res.json({ url });

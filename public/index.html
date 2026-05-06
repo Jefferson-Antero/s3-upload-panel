@@ -814,7 +814,7 @@ function adminRow(info) {
     <td class="time-cell">${fmtTime(info.startedAt)}</td>
     <td class="time-cell">${duration}</td>
     <td>${info.status === 'completed' && info.key
-      ? `<button class="btn-download" onclick="adminDownloadFile(${JSON.stringify(info.key)}, ${JSON.stringify(info.fileName)})">↓ Baixar</button>`
+      ? `<button class="btn-download" onclick="adminDownloadFile(${esc(JSON.stringify(info.key))}, ${esc(JSON.stringify(info.fileName))})">↓ Baixar</button>`
       : '—'}</td>
   </tr>`;
 }
@@ -883,7 +883,7 @@ function render() {
       : f.status === 'uploading'
         ? `<button class="btn-cancel-file" onclick="cancelFile('${f.id}')">✕ Cancelar</button>`
         : f.status === 'done' && f.key
-          ? `<button class="btn-download" onclick="downloadFile(${JSON.stringify(f.key)}, ${JSON.stringify(f.file.name)})">↓ Baixar</button>`
+          ? `<button class="btn-download" onclick="downloadFile(${esc(JSON.stringify(f.key))}, ${esc(JSON.stringify(f.file.name))})">↓ Baixar</button>`
           : '';
 
     return `
