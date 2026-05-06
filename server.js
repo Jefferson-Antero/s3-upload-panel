@@ -15,12 +15,17 @@ const crypto = require('crypto');
 const path   = require('path');
 
 const app = express();
+const cspDefaults = helmet.contentSecurityPolicy.getDefaultDirectives();
+delete cspDefaults['upgrade-insecure-requests'];
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'script-src': ["'self'", "'unsafe-inline'"],
-      'connect-src': ["'self'"],
+      ...cspDefaults,
+      'script-src':      ["'self'", "'unsafe-inline'"],
+      'script-src-attr': ["'unsafe-inline'"],
+      'img-src':         ["'self'", 'data:', 'https://dstec.com.br'],
+      'connect-src':     ["'self'"],
     },
   },
 }));
