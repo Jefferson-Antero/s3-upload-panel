@@ -15,6 +15,7 @@
       --accent-h:   #2563eb;
       --success:    #22c55e;
       --error:      #ef4444;
+      --warning:    #f59e0b;
       --text:       #e5e5e5;
       --muted:      #737373;
       --radius:     12px;
@@ -33,9 +34,11 @@
     #login-screen {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 24px;
+      gap: 20px;
     }
 
     .login-card {
@@ -52,6 +55,7 @@
 
     label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
 
+    input[type=text],
     input[type=password] {
       width: 100%;
       background: var(--bg);
@@ -64,6 +68,7 @@
       transition: border-color .2s;
       margin-bottom: 20px;
     }
+    input[type=text]:focus,
     input[type=password]:focus { border-color: var(--accent); }
 
     .btn {
@@ -89,6 +94,15 @@
 
     .err { color: var(--error); font-size: 13px; margin-top: 12px; text-align: center; min-height: 18px; }
 
+    .admin-link {
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .admin-link:hover { color: var(--text); }
+
     /* ── UPLOAD SCREEN ─────────────────────────────────── */
     #upload-screen { display: none; flex-direction: column; min-height: 100vh; }
 
@@ -102,12 +116,6 @@
     }
 
     .logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
-    .logo-box {
-      width: 32px; height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-    }
 
     main {
       flex: 1;
@@ -192,12 +200,34 @@
     .badge-upload   { background: rgba(59,130,246,.15);  color: var(--accent); }
     .badge-done     { background: rgba(34,197,94,.15);   color: var(--success); }
     .badge-error    { background: rgba(239,68,68,.15);   color: var(--error); }
+    .badge-completed { background: rgba(34,197,94,.15);  color: var(--success); }
+    .badge-aborted  { background: rgba(245,158,11,.15);  color: var(--warning); }
+    .badge-admin      { background: rgba(59,130,246,.2); color: var(--accent); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .05em; }
+    .badge-cancelled  { background: rgba(245,158,11,.15); color: var(--warning); }
+
+    .btn-danger { background: rgba(239,68,68,.12); color: var(--error); border: 1px solid rgba(239,68,68,.25); }
+    .btn-danger:hover { background: rgba(239,68,68,.22); }
+
+    .btn-cancel-file {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .btn-cancel-file:hover { background: rgba(239,68,68,.1); color: var(--error); border-color: rgba(239,68,68,.3); }
 
     /* ── PROGRESS BAR ──────────────────────────────────── */
     .bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 3px; transition: width .3s; background: var(--accent); }
     .bar-fill.done  { background: var(--success); }
     .bar-fill.error { background: var(--error); }
+    .bar-fill.warn  { background: var(--warning); }
 
     .progress-info {
       display: flex; justify-content: space-between;
@@ -210,6 +240,138 @@
     #btn-upload { font-size: 15px; padding: 12px 28px; }
     #queue-info { font-size: 13px; color: var(--muted); }
 
+    /* ── ADMIN SCREEN ──────────────────────────────────── */
+    #admin-login-screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 20px;
+    }
+
+    #admin-screen { display: none; flex-direction: column; min-height: 100vh; }
+
+    .admin-main {
+      flex: 1;
+      padding: 32px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Stats cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .stat-value.blue   { color: var(--accent); }
+    .stat-value.green  { color: var(--success); }
+    .stat-value.red    { color: var(--error); }
+
+    /* SSE status */
+    .sse-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .sse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background .3s;
+    }
+    .sse-dot.connected { background: var(--success); animation: pulse 2s infinite; }
+    .sse-dot.error     { background: var(--error); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .4; }
+    }
+
+    /* Admin table */
+    .admin-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .admin-table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-table-title { font-size: 15px; font-weight: 600; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+
+    tbody td { padding: 14px 16px; vertical-align: middle; }
+
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .user-name { font-weight: 500; }
+
+    .file-cell { max-width: 200px; }
+    .file-cell-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+    .file-cell-size { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .progress-cell { min-width: 160px; }
+    .progress-cell .bar { margin-bottom: 5px; }
+    .progress-cell .pct { font-size: 12px; color: var(--muted); }
+
+    .time-cell { color: var(--muted); white-space: nowrap; }
+
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state p { font-size: 14px; margin-top: 10px; }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -219,12 +381,15 @@
 <div id="login-screen">
   <div class="login-card">
     <h1>📤 Upload S3</h1>
-    <p>Digite a senha para acessar o painel de envio.</p>
+    <p>Informe seu nome e senha para acessar o painel de envio.</p>
+    <label for="uname">Seu nome</label>
+    <input type="text" id="uname" placeholder="Ex: João Silva" autocomplete="name" />
     <label for="pwd">Senha</label>
     <input type="password" id="pwd" placeholder="••••••••" />
     <button class="btn btn-primary" id="btn-login" onclick="login()">Entrar</button>
     <p class="err" id="login-err"></p>
   </div>
+  <a class="admin-link" onclick="showAdminLogin()">🔐 Área administrativa →</a>
 </div>
 
 <!-- ════════════ UPLOAD ════════════ -->
@@ -237,7 +402,6 @@
   </header>
 
   <main>
-    <!-- Progresso geral -->
     <div id="overall-box">
       <div class="overall-top">
         <span id="overall-label">Enviando...</span>
@@ -252,7 +416,6 @@
       </div>
     </div>
 
-    <!-- Zona de drop -->
     <div id="drop-zone" onclick="document.getElementById('file-input').click()">
       <span class="icon">📁</span>
       <h3>Arraste os arquivos aqui</h3>
@@ -261,10 +424,8 @@
     </div>
     <input type="file" id="file-input" multiple hidden onchange="handleFiles(this.files)" />
 
-    <!-- Lista de arquivos -->
     <div id="file-list"></div>
 
-    <!-- Botão de envio -->
     <div id="actions">
       <button class="btn btn-primary" id="btn-upload" onclick="startAll()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -274,44 +435,148 @@
         </svg>
         Enviar Todos
       </button>
+      <button class="btn btn-danger" id="btn-cancel-all" onclick="cancelAll()" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        Cancelar Todos
+      </button>
       <span id="queue-info"></span>
     </div>
   </main>
 </div>
 
+<!-- ════════════ ADMIN LOGIN ════════════ -->
+<div id="admin-login-screen">
+  <div class="login-card">
+    <h1>🔐 Área Admin</h1>
+    <p>Acesso restrito ao administrador do sistema.</p>
+    <label for="admin-pwd">Senha de administrador</label>
+    <input type="password" id="admin-pwd" placeholder="••••••••" />
+    <button class="btn btn-primary" id="btn-admin-login" onclick="adminLogin()">Entrar como Admin</button>
+    <p class="err" id="admin-login-err"></p>
+  </div>
+  <a class="admin-link" onclick="showLogin()">← Voltar ao upload</a>
+</div>
+
+<!-- ════════════ ADMIN DASHBOARD ════════════ -->
+<div id="admin-screen">
+  <header>
+    <div class="logo">
+      <img src="https://dstec.com.br/wp-content/uploads/2020/07/dstec-logo-branca.png" alt="Dstec" style="height:36px;object-fit:contain;" />
+      <span class="badge badge-admin" style="margin-left:8px">ADMIN</span>
+    </div>
+    <button class="btn btn-ghost" onclick="adminLogout()">Sair</button>
+  </header>
+
+  <div class="admin-main">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Uploads ativos</div>
+        <div class="stat-value blue" id="stat-active">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Concluídos</div>
+        <div class="stat-value green" id="stat-done">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Com erro / cancelados</div>
+        <div class="stat-value red" id="stat-error">0</div>
+      </div>
+    </div>
+
+    <div class="sse-status">
+      <div class="sse-dot" id="sse-dot"></div>
+      <span id="sse-label">Conectando...</span>
+    </div>
+
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Uploads</span>
+        <span id="admin-table-count" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+      <div id="admin-table-body"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Configuração ──────────────────────────────────────────────────────────────
-const CHUNK_SIZE  = 100 * 1024 * 1024; // 100 MB por parte
-const CONCURRENCY = 4;                  // partes em paralelo por arquivo
+const CHUNK_SIZE  = 100 * 1024 * 1024;
+const CONCURRENCY = 4;
 
-// ── Estado ────────────────────────────────────────────────────────────────────
-let token = sessionStorage.getItem('s3_token');
-let files = [];       // { id, file, status, bytesUploaded, uploadId, key, error }
+// ── Estado colaborador ────────────────────────────────────────────────────────
+let token     = sessionStorage.getItem('s3_token');
+let userName  = sessionStorage.getItem('s3_name') || '';
+let files     = [];
 let uploading = false;
 let speedTimer = null;
-let lastBytes = 0;
-let lastTs = 0;
+let lastBytes  = 0;
+let lastTs     = 0;
+
+// Throttle de progresso: uploadId → último ts reportado
+const progressThrottle = {};
+
+// Cancelamento
+const cancelledFiles = new Set();   // IDs de arquivos marcados para cancelar
+const activeXhrs     = new Map();   // fileId → Set<XMLHttpRequest>
+let cancelAllPending = false;
+
+// ── Estado admin ──────────────────────────────────────────────────────────────
+let adminToken   = sessionStorage.getItem('admin_token');
+let adminUploads = new Map(); // uploadId → info
+let adminESS     = null;
 
 // ── Inicialização ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  if (token) showUpload();
+  if (adminToken) { initAdmin(); return; }
+  if (token)      { showUpload(); return; }
 });
 
-document.getElementById('pwd').addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
-});
+// Enter nos campos de login
+document.getElementById('uname').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pwd').focus(); });
+document.getElementById('pwd').addEventListener('keydown',   e => { if (e.key === 'Enter') login(); });
+document.getElementById('admin-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
 
-// Avisa se fechar a aba durante upload
 window.addEventListener('beforeunload', e => {
-  if (uploading) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
+  if (uploading) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── Navegação entre telas ─────────────────────────────────────────────────────
+function showLogin() {
+  hide('admin-login-screen');
+  hide('admin-screen');
+  hide('upload-screen');
+  show('login-screen');
+}
+
+function showAdminLogin() {
+  hide('login-screen');
+  show('admin-login-screen');
+}
+
+function showUpload() {
+  hide('login-screen');
+  hide('admin-login-screen');
+  document.getElementById('upload-screen').style.display = 'flex';
+}
+
+function showAdminScreen() {
+  hide('login-screen');
+  hide('admin-login-screen');
+  hide('upload-screen');
+  document.getElementById('admin-screen').style.display = 'flex';
+}
+
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function show(id) { document.getElementById(id).style.display = 'flex'; }
+
+// ── Auth colaborador ──────────────────────────────────────────────────────────
 async function login() {
-  const pwd = document.getElementById('pwd').value.trim();
+  const name = document.getElementById('uname').value.trim();
+  const pwd  = document.getElementById('pwd').value.trim();
   if (!pwd) return;
   const btn = document.getElementById('btn-login');
   const err = document.getElementById('login-err');
@@ -319,9 +584,11 @@ async function login() {
   btn.textContent = 'Entrando...';
   err.textContent = '';
   try {
-    const data = await api('/auth', { password: pwd }, false);
-    token = data.token;
+    const data = await api('/auth', { password: pwd, name: name || 'Colaborador' }, false);
+    token    = data.token;
+    userName = name || 'Colaborador';
     sessionStorage.setItem('s3_token', token);
+    sessionStorage.setItem('s3_name', userName);
     showUpload();
   } catch (e) {
     err.textContent = e.message;
@@ -335,12 +602,215 @@ async function logout() {
   try { await api('/auth/logout', {}); } catch (_) {}
   token = null;
   sessionStorage.removeItem('s3_token');
+  sessionStorage.removeItem('s3_name');
   location.reload();
 }
 
-function showUpload() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('upload-screen').style.display = 'flex';
+// ── Auth admin ────────────────────────────────────────────────────────────────
+async function adminLogin() {
+  const pwd = document.getElementById('admin-pwd').value.trim();
+  if (!pwd) return;
+  const btn = document.getElementById('btn-admin-login');
+  const err = document.getElementById('admin-login-err');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  err.textContent = '';
+  try {
+    const data = await apiAdmin('/admin/auth', { password: pwd });
+    adminToken = data.token;
+    sessionStorage.setItem('admin_token', adminToken);
+    initAdmin();
+  } catch (e) {
+    err.textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = 'Entrar como Admin';
+  }
+}
+
+async function adminLogout() {
+  try { await apiAdmin('/admin/logout'); } catch (_) {}
+  adminToken = null;
+  sessionStorage.removeItem('admin_token');
+  if (adminESS) { adminESS.close(); adminESS = null; }
+  location.reload();
+}
+
+// ── Admin init ────────────────────────────────────────────────────────────────
+function initAdmin() {
+  showAdminScreen();
+  connectSSE();
+}
+
+function connectSSE() {
+  if (adminESS) adminESS.close();
+
+  const dot   = document.getElementById('sse-dot');
+  const label = document.getElementById('sse-label');
+
+  dot.className   = 'sse-dot';
+  label.textContent = 'Conectando...';
+
+  adminESS = new EventSource(`/admin/stream?token=${encodeURIComponent(adminToken)}`);
+
+  adminESS.addEventListener('init', e => {
+    const list = JSON.parse(e.data);
+    adminUploads.clear();
+    for (const info of list) adminUploads.set(info.uploadId, info);
+    renderAdmin();
+    dot.className   = 'sse-dot connected';
+    label.textContent = 'Tempo real ativo';
+  });
+
+  adminESS.addEventListener('upload_started', e => {
+    const info = JSON.parse(e.data);
+    adminUploads.set(info.uploadId, info);
+    renderAdmin();
+  });
+
+  adminESS.addEventListener('progress', e => {
+    const { uploadId, bytesUploaded } = JSON.parse(e.data);
+    const info = adminUploads.get(uploadId);
+    if (info) {
+      info.bytesUploaded = bytesUploaded;
+      patchAdminRow(uploadId);
+      renderAdminStats();
+    }
+  });
+
+  adminESS.addEventListener('upload_completed', e => {
+    const info = JSON.parse(e.data);
+    adminUploads.set(info.uploadId, info);
+    renderAdmin();
+  });
+
+  adminESS.addEventListener('upload_aborted', e => {
+    const info = JSON.parse(e.data);
+    adminUploads.set(info.uploadId, info);
+    renderAdmin();
+  });
+
+  adminESS.addEventListener('error', () => {
+    dot.className   = 'sse-dot error';
+    label.textContent = 'Desconectado — reconectando...';
+    // EventSource reconnects automatically, but if token expired, stop
+    if (adminESS.readyState === EventSource.CLOSED) {
+      label.textContent = 'Sessão expirada. Faça login novamente.';
+    }
+  });
+
+  adminESS.addEventListener('open', () => {
+    dot.className   = 'sse-dot connected';
+    label.textContent = 'Tempo real ativo';
+  });
+}
+
+// ── Admin render ──────────────────────────────────────────────────────────────
+function renderAdmin() {
+  renderAdminStats();
+  renderAdminTable();
+}
+
+function renderAdminStats() {
+  let active = 0, done = 0, err = 0;
+  for (const info of adminUploads.values()) {
+    if (info.status === 'uploading')  active++;
+    else if (info.status === 'completed') done++;
+    else err++;
+  }
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-done').textContent   = done;
+  document.getElementById('stat-error').textContent  = err;
+  document.getElementById('admin-table-count').textContent =
+    adminUploads.size > 0 ? `${adminUploads.size} registro${adminUploads.size > 1 ? 's' : ''}` : '';
+}
+
+function renderAdminTable() {
+  const body = document.getElementById('admin-table-body');
+
+  if (adminUploads.size === 0) {
+    body.innerHTML = `<div class="empty-state"><div style="font-size:40px">📭</div><p>Nenhum upload registrado ainda.<br>Aguardando colaboradores...</p></div>`;
+    return;
+  }
+
+  // Sort: uploading first, then by startedAt desc
+  const sorted = [...adminUploads.values()].sort((a, b) => {
+    if (a.status === 'uploading' && b.status !== 'uploading') return -1;
+    if (b.status === 'uploading' && a.status !== 'uploading') return 1;
+    return b.startedAt - a.startedAt;
+  });
+
+  body.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Colaborador</th>
+          <th>Arquivo</th>
+          <th>Progresso</th>
+          <th>Status</th>
+          <th>Início</th>
+          <th>Duração</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(info => adminRow(info)).join('')}
+      </tbody>
+    </table>`;
+}
+
+function adminRow(info) {
+  const pct    = info.fileSize > 0 ? Math.min(100, Math.round((info.bytesUploaded / info.fileSize) * 100)) : 0;
+  const fillCls = info.status === 'completed' ? 'done' : info.status === 'aborted' ? 'warn' : '';
+  const badgeCls = {
+    uploading: 'badge-upload', completed: 'badge-completed',
+    aborted: 'badge-aborted', error: 'badge-error',
+  }[info.status] || 'badge-wait';
+  const badgeLabel = {
+    uploading: 'Enviando', completed: 'Concluído',
+    aborted: 'Cancelado', error: 'Erro',
+  }[info.status] || info.status;
+
+  const duration = info.completedAt
+    ? fmtDuration(info.completedAt - info.startedAt)
+    : fmtDuration(Date.now() - info.startedAt) + '…';
+
+  const initial = (info.userName || '?').charAt(0).toUpperCase();
+
+  return `
+  <tr id="arow-${info.uploadId}">
+    <td>
+      <div class="user-cell">
+        <div class="user-avatar">${esc(initial)}</div>
+        <span class="user-name">${esc(info.userName || 'Colaborador')}</span>
+      </div>
+    </td>
+    <td class="file-cell">
+      <div class="file-cell-name" title="${esc(info.fileName)}">${esc(info.fileName)}</div>
+      <div class="file-cell-size">${fmt(info.fileSize)}</div>
+    </td>
+    <td class="progress-cell">
+      <div class="bar"><div class="bar-fill ${fillCls}" id="abf-${info.uploadId}" style="width:${pct}%"></div></div>
+      <div class="pct">
+        <span id="abytes-${info.uploadId}">${fmt(info.bytesUploaded)}</span> /
+        ${fmt(info.fileSize)}
+        &nbsp;<span id="apct-${info.uploadId}">${pct}%</span>
+      </div>
+    </td>
+    <td><span class="badge ${badgeCls}">${badgeLabel}</span></td>
+    <td class="time-cell">${fmtTime(info.startedAt)}</td>
+    <td class="time-cell">${duration}</td>
+  </tr>`;
+}
+
+function patchAdminRow(uploadId) {
+  const info = adminUploads.get(uploadId);
+  if (!info) return;
+  const pct = info.fileSize > 0 ? Math.min(100, Math.round((info.bytesUploaded / info.fileSize) * 100)) : 0;
+  const bf = document.getElementById(`abf-${uploadId}`);
+  if (bf) bf.style.width = pct + '%';
+  const ab = document.getElementById(`abytes-${uploadId}`);
+  if (ab) ab.textContent = fmt(info.bytesUploaded);
+  const ap = document.getElementById(`apct-${uploadId}`);
+  if (ap) ap.textContent = pct + '%';
 }
 
 // ── Drag & drop ───────────────────────────────────────────────────────────────
@@ -363,7 +833,7 @@ function handleFiles(list) {
   render();
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render colaborador ────────────────────────────────────────────────────────
 function render() {
   const list    = document.getElementById('file-list');
   const actions = document.getElementById('actions');
@@ -378,15 +848,23 @@ function render() {
 
   list.innerHTML = files.map(f => {
     const pct   = Math.round((f.bytesUploaded / f.file.size) * 100);
-    const fill  = f.status === 'done' ? 'done' : f.status === 'error' ? 'error' : '';
-    const badge = { wait: 'badge-wait', uploading: 'badge-upload', done: 'badge-done', error: 'badge-error' }[f.status];
-    const label = { wait: 'Aguardando', uploading: 'Enviando', done: 'Concluído', error: 'Erro' }[f.status];
+    const fill  = f.status === 'done' ? 'done' : f.status === 'error' ? 'error' : f.status === 'cancelled' ? 'warn' : '';
+    const badge = { wait: 'badge-wait', uploading: 'badge-upload', done: 'badge-done', error: 'badge-error', cancelled: 'badge-cancelled' }[f.status];
+    const label = { wait: 'Aguardando', uploading: 'Enviando', done: 'Concluído', error: 'Erro', cancelled: 'Cancelado' }[f.status];
 
     const infoLeft = f.status === 'error'
       ? `<span style="color:var(--error)">${f.error || 'Erro no upload'}</span>`
-      : f.status === 'done'
-        ? `<span style="color:var(--success)">✓ Enviado com sucesso</span>`
-        : `${fmt(f.bytesUploaded)} / ${fmt(f.file.size)}`;
+      : f.status === 'cancelled'
+        ? `<span style="color:var(--warning)">✕ Cancelado pelo usuário</span>`
+        : f.status === 'done'
+          ? `<span style="color:var(--success)">✓ Enviado com sucesso</span>`
+          : `${fmt(f.bytesUploaded)} / ${fmt(f.file.size)}`;
+
+    const actionBtn = f.status === 'wait'
+      ? `<button class="btn-remove" title="Remover" onclick="removeFile('${f.id}')">✕</button>`
+      : f.status === 'uploading'
+        ? `<button class="btn-cancel-file" onclick="cancelFile('${f.id}')">✕ Cancelar</button>`
+        : '';
 
     return `
     <div class="file-card" id="fc-${f.id}">
@@ -397,7 +875,7 @@ function render() {
           <div class="file-size">${fmt(f.file.size)}</div>
         </div>
         <span class="badge ${badge}">${label}</span>
-        ${f.status === 'wait' ? `<button class="btn-remove" title="Remover" onclick="removeFile('${f.id}')">✕</button>` : ''}
+        ${actionBtn}
       </div>
       <div class="bar"><div class="bar-fill ${fill}" id="bf-${f.id}" style="width:${pct}%"></div></div>
       <div class="progress-info">
@@ -408,7 +886,6 @@ function render() {
   }).join('');
 }
 
-// Atualiza apenas a barra de um arquivo sem re-renderizar tudo
 function patchProgress(id) {
   const f = files.find(x => x.id === id);
   if (!f) return;
@@ -420,6 +897,9 @@ function patchProgress(id) {
   const pr = document.getElementById(`pi-r-${id}`);
   if (pr) pr.textContent = pct + '%';
   renderOverall();
+
+  // Reporta progresso ao servidor (throttle: 1x por 2s por arquivo)
+  if (f.uploadId) reportProgress(f.uploadId, f.bytesUploaded);
 }
 
 function renderOverall() {
@@ -442,24 +922,31 @@ async function startAll() {
   if (!waiting.length || uploading) return;
 
   uploading = true;
+  cancelAllPending = false;
   document.getElementById('overall-box').style.display = 'block';
   document.getElementById('btn-upload').disabled = true;
+  document.getElementById('btn-cancel-all').style.display = 'inline-flex';
   document.getElementById('overall-label').textContent = 'Enviando arquivos...';
   startSpeedTracker();
   render();
 
   for (const f of waiting) {
+    if (cancelAllPending) break;
     await uploadFile(f);
     render();
   }
 
   clearInterval(speedTimer);
   uploading = false;
+  cancelAllPending = false;
+  document.getElementById('btn-cancel-all').style.display = 'none';
 
-  const allDone  = files.every(f => f.status === 'done');
-  const hasError = files.some(f => f.status === 'error');
+  const allDone      = files.every(f => f.status === 'done');
+  const hasError     = files.some(f => f.status === 'error');
+  const hasCancelled = files.some(f => f.status === 'cancelled');
   document.getElementById('overall-label').textContent =
     allDone ? '✓ Todos os arquivos enviados com sucesso!' :
+    hasCancelled && !hasError ? 'Envio cancelado' :
     hasError ? 'Concluído com erros' : 'Concluído';
   document.getElementById('speed-badge').textContent = '';
   render();
@@ -470,20 +957,19 @@ async function uploadFile(f) {
   f.bytesUploaded = 0;
   render();
 
-  const totalParts    = Math.ceil(f.file.size / CHUNK_SIZE);
-  const partUploaded  = new Array(totalParts).fill(0);
-  const parts         = new Array(totalParts).fill(null);
+  const totalParts   = Math.ceil(f.file.size / CHUNK_SIZE);
+  const partUploaded = new Array(totalParts).fill(0);
+  const parts        = new Array(totalParts).fill(null);
 
   try {
-    // 1. Inicia o multipart upload
     const { uploadId, key } = await api('/upload/initiate', {
       filename:    f.file.name,
       contentType: f.file.type || 'application/octet-stream',
+      fileSize:    f.file.size,
     });
     f.uploadId = uploadId;
     f.key      = key;
 
-    // 2. Cria tarefas para cada parte
     const tasks = Array.from({ length: totalParts }, (_, i) => async () => {
       const partNumber = i + 1;
       const start = i * CHUNK_SIZE;
@@ -495,57 +981,88 @@ async function uploadFile(f) {
         partUploaded[i] = loaded;
         f.bytesUploaded = partUploaded.reduce((a, b) => a + b, 0);
         patchProgress(f.id);
-      });
+      }, f.id);
 
       parts[i] = { PartNumber: partNumber, ETag: etag };
     });
 
-    // 3. Executa com concorrência controlada
     await parallel(tasks, CONCURRENCY);
 
-    // 4. Finaliza o multipart upload
     await api('/upload/complete', { key, uploadId, parts });
 
     f.status        = 'done';
     f.bytesUploaded = f.file.size;
+    reportProgress(uploadId, f.file.size, true);
 
   } catch (err) {
-    console.error('uploadFile:', err);
-    f.status = 'error';
-    f.error  = err.message;
+    const wasCancelled = cancelledFiles.has(f.id);
+    cancelledFiles.delete(f.id);
+    activeXhrs.delete(f.id);
+    f.status = wasCancelled ? 'cancelled' : 'error';
+    f.error  = wasCancelled ? 'Cancelado pelo usuário' : err.message;
+    if (!wasCancelled) console.error('uploadFile:', err);
     if (f.uploadId && f.key) {
       api('/upload/abort', { key: f.key, uploadId: f.uploadId }).catch(() => {});
     }
   }
 }
 
-// Upload de uma parte diretamente para a URL assinada do S3 via XHR (suporta progresso)
-function xhrPut(url, chunk, onProgress) {
+function xhrPut(url, chunk, onProgress, fileId) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+
+    if (fileId) {
+      if (!activeXhrs.has(fileId)) activeXhrs.set(fileId, new Set());
+      activeXhrs.get(fileId).add(xhr);
+    }
+    const cleanup = () => { if (fileId) activeXhrs.get(fileId)?.delete(xhr); };
+
     xhr.open('PUT', url);
     xhr.upload.addEventListener('progress', e => {
       if (e.lengthComputable) onProgress(e.loaded);
     });
     xhr.addEventListener('load', () => {
-      if (xhr.status === 200) {
-        resolve(xhr.getResponseHeader('ETag'));
-      } else {
-        reject(new Error(`S3 retornou HTTP ${xhr.status}`));
-      }
+      cleanup();
+      if (xhr.status === 200) resolve(xhr.getResponseHeader('ETag'));
+      else reject(new Error(`S3 retornou HTTP ${xhr.status}`));
     });
-    xhr.addEventListener('error', () => reject(new Error('Erro de conexão com S3')));
+    xhr.addEventListener('error', () => { cleanup(); reject(new Error('Erro de conexão com S3')); });
+    xhr.addEventListener('abort', () => { cleanup(); reject(new Error('Cancelado')); });
     xhr.send(chunk);
   });
 }
 
-// Executa um array de funções async com limite de concorrência
 async function parallel(tasks, limit) {
   let i = 0;
   async function worker() {
     while (i < tasks.length) { await tasks[i++](); }
   }
   await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+}
+
+// ── Cancelamento ──────────────────────────────────────────────────────────────
+function cancelFile(id) {
+  if (cancelledFiles.has(id)) return;
+  cancelledFiles.add(id);
+  const xhrs = activeXhrs.get(id);
+  if (xhrs) {
+    for (const xhr of xhrs) { try { xhr.abort(); } catch (_) {} }
+  }
+}
+
+function cancelAll() {
+  cancelAllPending = true;
+  const active = files.find(f => f.status === 'uploading');
+  if (active) cancelFile(active.id);
+}
+
+// ── Reporta progresso ao servidor ────────────────────────────────────────────
+function reportProgress(uploadId, bytesUploaded, force = false) {
+  const now  = Date.now();
+  const last = progressThrottle[uploadId] || 0;
+  if (!force && now - last < 2000) return;
+  progressThrottle[uploadId] = now;
+  api('/upload/progress', { uploadId, bytesUploaded }).catch(() => {});
 }
 
 // ── Velocidade ────────────────────────────────────────────────────────────────
@@ -562,7 +1079,7 @@ function startSpeedTracker() {
   }, 1500);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── API helpers ───────────────────────────────────────────────────────────────
 async function api(endpoint, body, auth = true) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) headers['x-auth-token'] = token;
@@ -572,11 +1089,33 @@ async function api(endpoint, body, auth = true) {
   return data;
 }
 
+async function apiAdmin(endpoint, body = {}) {
+  const headers = { 'Content-Type': 'application/json', 'x-admin-token': adminToken || '' };
+  const res  = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ── Formatação ────────────────────────────────────────────────────────────────
 function fmt(bytes) {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) return '0 B';
   const u = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + u[i];
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function fmtDuration(ms) {
+  if (ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  if (s < 60)   return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
 }
 
 function icon(name) {
@@ -591,7 +1130,7 @@ function icon(name) {
 }
 
 function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
