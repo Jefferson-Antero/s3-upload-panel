@@ -59,6 +59,7 @@ s3.middlewareStack.add(
     delete args.request.headers['x-amz-checksum-crc32'];
     delete args.request.headers['x-amz-checksum-crc64nvme'];
     delete args.request.headers['x-amz-sdk-checksum-algorithm'];
+    delete args.request.headers['x-amz-checksum-mode'];
     return next(args);
   },
   { step: 'build', name: 'stripChecksumForPresign', priority: 'low' }

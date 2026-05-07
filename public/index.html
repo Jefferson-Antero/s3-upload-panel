@@ -1136,11 +1136,19 @@ async function parallelChunkedDownload(url, filename, fileSize, btn) {
   const tasks = Array.from({ length: totalChunks }, (_, i) => async () => {
     const start = i * DOWNLOAD_CHUNK;
     const end   = Math.min(start + DOWNLOAD_CHUNK - 1, fileSize - 1);
-    const resp  = await fetch(url, { headers: { Range: `bytes=${start}-${end}` } });
-    if (!resp.ok && resp.status !== 206) throw new Error(`HTTP ${resp.status}`);
-    chunks[i] = await resp.arrayBuffer();
-    done++;
-    setLabel(`↓ ${Math.round((done / totalChunks) * 100)}%`);
+    let lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+        const resp = await fetch(url, { headers: { Range: `bytes=${start}-${end}` } });
+        if (!resp.ok && resp.status !== 206) throw new Error(`HTTP ${resp.status}`);
+        chunks[i] = await resp.arrayBuffer();
+        done++;
+        setLabel(`↓ ${Math.round((done / totalChunks) * 100)}%`);
+        return;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
   });
 
   await parallel(tasks, DOWNLOAD_CONCURRENCY);
